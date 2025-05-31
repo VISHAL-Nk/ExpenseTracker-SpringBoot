@@ -1,4 +1,5 @@
-providers = ["java"]
+[providers]
+java = "17"
 
 [phases.build]
 cmds = ["mvn clean package -DskipTests"]
