@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense Tracker</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>💰 Expense Tracker</h1>
+            <div id="user-info" class="user-info" style="display: none;">
+                <span id="user-name"></span>
+                <button onclick="logout()" class="logout-btn">Logout</button>
+            </div>
+        </header>
+
+        <!-- Login/Register Section -->
+        <div id="auth-section" class="auth-section">
+            <div class="auth-tabs">
+                <button onclick="showLogin()" class="tab-btn active" id="login-tab">Login</button>
+                <button onclick="showRegister()" class="tab-btn" id="register-tab">Register</button>
+            </div>
+
+            <!-- Login Form -->
+            <div id="login-form" class="auth-form">
+                <h2>Login</h2>
+                <form onsubmit="login(event)">
+                    <input type="email" id="login-email" placeholder="Email" required>
+                    <input type="text" id="login-name" placeholder="Name" required>
+                    <button type="submit">Login</button>
+                </form>
+            </div>
+
+            <!-- Register Form -->
+            <div id="register-form" class="auth-form" style="display: none;">
+                <h2>Register</h2>
+                <form onsubmit="register(event)">
+                    <input type="text" id="register-name" placeholder="Full Name" required>
+                    <input type="email" id="register-email" placeholder="Email" required>
+                    <button type="submit">Register</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Main App Section -->
+        <div id="app-section" class="app-section" style="display: none;">
+            <!-- Add Expense Form -->
+            <div class="expense-form">
+                <h2>Add New Expense</h2>
+                <form onsubmit="addExpense(event)">
+                    <input type="text" id="expense-description" placeholder="Description" required>
+                    <input type="number" id="expense-amount" step="0.01" placeholder="Amount" required>
+                    <input type="date" id="expense-date" required>
+                    <input type="text" id="expense-location" placeholder="Location">
+                    <select id="expense-category" required>
+                        <option value="">Select Category</option>
+                    </select>
+                    <button type="submit">Add Expense</button>
+                </form>
+            </div>
+
+            <!-- Add Category Form -->
+            <div class="category-form">
+                <h3>Add New Category</h3>
+                <form onsubmit="addCategory(event)">
+                    <input type="text" id="category-name" placeholder="Category Name" required>
+                    <button type="submit">Add Category</button>
+                </form>
+            </div>
+
+            <!-- Category Management -->
+            <div class="category-management">
+                <h3>Manage Categories</h3>
+                <div id="categories-container">
+                    <!-- Categories will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Expense List -->
+            <div class="expense-list">
+                <h2>Your Expenses</h2>
+                <div class="expense-summary">
+                    <span id="total-expenses">Total: $0.00</span>
+                </div>
+                <div id="expenses-container">
+                    <!-- Expenses will be loaded here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Message Display -->
+        <div id="message" class="message"></div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
