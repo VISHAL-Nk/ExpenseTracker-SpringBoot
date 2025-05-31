@@ -4,6 +4,14 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 
+# Log files
+*.log
+app.log
+
+# Environment variables
+.env
+.env.local
+
 ### STS ###
 .apt_generated
 .classpath
