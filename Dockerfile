@@ -23,5 +23,5 @@ EXPOSE 8080
 # Set environment variable
 ENV SPRING_PROFILES_ACTIVE=prod
 
-# Run the application
-CMD ["java", "-jar", "target/ExpenseTracker-0.0.1-SNAPSHOT.jar"]
+# Run the application with port binding
+CMD ["sh", "-c", "java -Dserver.port=${PORT:-8080} -jar target/ExpenseTracker-0.0.1-SNAPSHOT.jar"]
