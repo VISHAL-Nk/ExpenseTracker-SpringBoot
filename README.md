@@ -157,8 +157,9 @@ classDiagram
     }
 
     Transaction <|-- Expense : extends
-    User ||--o{ Expense : "1..* expenses"
-    Category ||--o{ Expense : "1..* expenses"
+    User "1" o-- "*" Expense : "has many"
+    Category "1" o-- "*" Expense : "categorizes"
+
     
     ExpenseService ..|> ReportService : implements
     ExpenseService --> ExpenseRepository : uses
@@ -208,9 +209,9 @@ erDiagram
         varchar name UK
     }
     
-    TRANSACTION ||--|| EXPENSE : "inheritance (JOINED strategy)"
-    APP_USER ||--o{ EXPENSE : "user creates expenses"
-    CATEGORY ||--o{ EXPENSE : "category classifies expenses"
+    TRANSACTION ||--|| EXPENSE : inherits
+    APP_USER ||--o{ EXPENSE : creates
+    CATEGORY ||--o{ EXPENSE : classifies
 ```
 
 ### Sequence Diagram - Create Expense
