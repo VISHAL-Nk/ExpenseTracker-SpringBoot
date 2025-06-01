@@ -1,440 +1,620 @@
-# 💰 ExpenseTracker Web Application
+# ExpenseTracker Backend Documentation
 
-A complete expense tracking web application built with Spring Boot backend and vanilla JavaScript frontend.
+## 📋 Table of Contents
+1. [Overview](#overview)
+2. [Architecture](#architecture)
+3. [UML Diagrams](#uml-diagrams)
+4. [Class Descriptions](#class-descriptions)
+5. [Database Design](#database-design)
+6. [API Endpoints](#api-endpoints)
+7. [OOP Principles Implementation](#oop-principles-implementation)
+8. [Setup Instructions](#setup-instructions)
 
-## 🚀 Features
+## 🔍 Overview
 
-### 🔐 User Authentication
-- User registration with name and email
-- Simple login system
-- User session management
-- **Admin privilege system** with role-based access controls
-- Admin user identification with visual badges
+The ExpenseTracker backend is a Spring Boot application that implements a comprehensive expense management system. Built with Java 17 and Spring Boot 2.7.18, it follows a layered architecture pattern with proper separation of concerns.
 
-### 💰 Expense Management
-- Add new expenses with amount, category, date, description, and location
-- View all your expenses in a clean table format
-- Delete expenses
-- Real-time expense calculations
+### Key Technologies
+- **Framework**: Spring Boot 2.7.18
+- **Language**: Java 17
+- **Database**: H2 (development) / PostgreSQL (production)
+- **ORM**: JPA/Hibernate
+- **Build Tool**: Maven
+- **Additional**: Lombok, Jackson
 
-### 🏷️ Category Management
-- Pre-loaded categories (Travel, Auto Loan, Student Loan)
-- Add custom categories
-- Dropdown selection when adding expenses
-- **Admin-only category deletion** with permission controls
-- Visual admin badges and privilege indicators
+## 🏗️ Architecture
 
-### 📊 Dashboard Features
-- Total expense amount display
-- Expense count
-- Category-wise organization
-- Responsive design
+The application follows a clean **Layered Architecture** pattern:
 
-## 🛠️ Technologies Used
+```
+Controller Layer → Service Layer → Repository Layer → Model Layer
+```
 
-### Backend
-- **Spring Boot 2.7.18** - Main framework
-- **Spring Data JPA** - Database operations
-- **H2 Database** - In-memory database
-- **Lombok** - Boilerplate code reduction
-- **Maven** - Dependency management
+- **Controller Layer**: REST endpoints and HTTP request handling
+- **Service Layer**: Business logic and transaction management
+- **Repository Layer**: Data access and persistence operations
+- **Model Layer**: Entity definitions and data structures
 
-### Frontend
-- **HTML5** - Structure
-- **CSS3** - Styling with modern design
-- **Vanilla JavaScript** - Functionality and API calls
-- **Responsive Design** - Works on all devices
+## 📊 UML Diagrams
 
-## 🏃‍♂️ How to Run
+### Class Diagram
+
+```mermaid
+classDiagram
+    class Transaction {
+        <<abstract>>
+        -Long id
+        -String description
+        +Transaction(String description)
+    }
+    
+    class Expense {
+        -Double amount
+        -LocalDate date
+        -String location
+        -Category category
+        -User user
+        +Expense(String description, Double amount, LocalDate date, String location, Category category, User user)
+    }
+    
+    class User {
+        -Long id
+        -String name
+        -String email
+        -boolean isAdmin
+        -List~Expense~ expenses
+        +User(String name, String email)
+        +User(String name, String email, boolean isAdmin)
+    }
+    
+    class Category {
+        -Long id
+        -String name
+        -List~Expense~ expenses
+        +Category(String name)
+    }
+    
+    class ExpenseService {
+        -ExpenseRepository expenseRepository
+        -UserService userService
+        -CategoryService categoryService
+        +getAllExpenses() List~Expense~
+        +createExpense(Expense expense) Expense
+        +updateExpense(Long id, Expense expense) Expense
+        +deleteExpense(Long id) void
+        +getMonthlySummary(Long userId, YearMonth month) Map~String, Double~
+        +getMonthlyTotal(Long userId, YearMonth month) Double
+    }
+    
+    class UserService {
+        -UserRepository userRepository
+        +getAllUsers() List~User~
+        +createUser(User user) User
+        +updateUser(Long id, User user) User
+        +deleteUser(Long id) void
+        +existsByEmail(String email) boolean
+        +isUserAdmin(Long userId) boolean
+    }
+    
+    class CategoryService {
+        -CategoryRepository categoryRepository
+        -UserRepository userRepository
+        +getAllCategories() List~Category~
+        +createCategory(Category category) Category
+        +updateCategory(Long id, Category category) Category
+        +deleteCategory(Long id) void
+        +deleteCategoryWithPermission(Long id, String userEmail) boolean
+    }
+    
+    class ReportService {
+        <<interface>>
+        +getMonthlySummary(Long userId, YearMonth month) Map~String, Double~
+        +getMonthlyTotal(Long userId, YearMonth month) Double
+    }
+    
+    class ExpenseRepository {
+        <<interface>>
+        +findByUserIdAndDateBetween(Long userId, LocalDate start, LocalDate end) List~Expense~
+        +findByUserId(Long userId) List~Expense~
+        +findByCategoryId(Long categoryId) List~Expense~
+    }
+    
+    class UserRepository {
+        <<interface>>
+        +existsByEmail(String email) boolean
+        +findByEmail(String email) User
+        +findByEmailAndName(String email, String name) User
+    }
+    
+    class CategoryRepository {
+        <<interface>>
+        +findByName(String name) Category
+        +existsByName(String name) boolean
+    }
+    
+    class ExpenseController {
+        -ExpenseService expenseService
+        +getExpenses() List~Expense~
+        +createExpense(Expense expense) ResponseEntity~Expense~
+        +updateExpense(Long id, Expense expense) ResponseEntity~Expense~
+        +deleteExpense(Long id) ResponseEntity
+        +getMonthlySummary(Long userId, int year, int month) Map~String, Double~
+    }
+    
+    class UserController {
+        -UserService userService
+        +getAllUsers() List~User~
+        +createUser(User user) ResponseEntity~User~
+        +registerUser(User user) ResponseEntity
+        +loginUser(Map loginRequest) ResponseEntity
+    }
+    
+    class CategoryController {
+        -CategoryService categoryService
+        +categories() Collection~Category~
+        +createCategory(Category category) ResponseEntity~Category~
+        +deleteCategory(Long id, String userEmail) Map~String, Object~
+    }
+
+    Transaction <|-- Expense : extends
+    User ||--o{ Expense : "1..* expenses"
+    Category ||--o{ Expense : "1..* expenses"
+    
+    ExpenseService ..|> ReportService : implements
+    ExpenseService --> ExpenseRepository : uses
+    ExpenseService --> UserService : uses
+    ExpenseService --> CategoryService : uses
+    
+    UserService --> UserRepository : uses
+    CategoryService --> CategoryRepository : uses
+    CategoryService --> UserRepository : uses
+    
+    ExpenseController --> ExpenseService : uses
+    UserController --> UserService : uses
+    CategoryController --> CategoryService : uses
+    
+    ExpenseRepository --> Expense : manages
+    UserRepository --> User : manages
+    CategoryRepository --> Category : manages
+```
+
+### Entity Relationship Diagram
+
+```mermaid
+erDiagram
+    TRANSACTION {
+        bigint id PK
+        varchar description
+    }
+    
+    EXPENSE {
+        bigint id PK,FK
+        double amount
+        date date
+        varchar location
+        bigint category_id FK
+        bigint user_id FK
+    }
+    
+    APP_USER {
+        bigint id PK
+        varchar name
+        varchar email UK
+        boolean is_admin
+    }
+    
+    CATEGORY {
+        bigint id PK
+        varchar name UK
+    }
+    
+    TRANSACTION ||--|| EXPENSE : "inheritance (JOINED strategy)"
+    APP_USER ||--o{ EXPENSE : "user creates expenses"
+    CATEGORY ||--o{ EXPENSE : "category classifies expenses"
+```
+
+### Sequence Diagram - Create Expense
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant ExpenseController
+    participant ExpenseService
+    participant UserService
+    participant CategoryService
+    participant ExpenseRepository
+    participant Database
+
+    Client->>ExpenseController: POST /api/expenses
+    ExpenseController->>ExpenseService: createExpense(expense)
+    
+    ExpenseService->>UserService: getUserById(userId)
+    UserService-->>ExpenseService: user
+    
+    ExpenseService->>CategoryService: getCategoryById(categoryId)
+    CategoryService-->>ExpenseService: category
+    
+    ExpenseService->>ExpenseRepository: save(expense)
+    ExpenseRepository->>Database: INSERT expense
+    Database-->>ExpenseRepository: saved expense
+    ExpenseRepository-->>ExpenseService: saved expense
+    ExpenseService-->>ExpenseController: saved expense
+    ExpenseController-->>Client: 201 Created + expense data
+```
+
+## 📝 Class Descriptions
+
+### Model Classes
+
+#### Transaction (Abstract Base Class)
+```java
+@Entity
+@Table(name = "transaction")
+@Inheritance(strategy = InheritanceType.JOINED)
+public abstract class Transaction
+```
+- **Purpose**: Abstract base class for all transaction types
+- **Key Features**:
+  - Uses JPA JOINED inheritance strategy
+  - Provides common transaction properties (id, description)
+  - Demonstrates inheritance OOP principle
+
+#### Expense (Entity Class)
+```java
+@Entity
+@Table(name="expense")
+public class Expense extends Transaction
+```
+- **Purpose**: Represents a financial expense transaction
+- **Key Features**:
+  - Extends Transaction (inheritance)
+  - Contains amount, date, location, category, and user relationships
+  - Many-to-One relationships with User and Category
+  - Implements proper encapsulation with Lombok annotations
+
+#### User (Entity Class)
+```java
+@Entity
+@Table(name="app_user")
+public class User
+```
+- **Purpose**: Represents application users
+- **Key Features**:
+  - Contains user information (name, email, admin status)
+  - One-to-Many relationship with Expense
+  - Unique email constraint
+  - Admin privilege system
+
+#### Category (Entity Class)
+```java
+@Entity
+@Table(name="category")
+public class Category
+```
+- **Purpose**: Organizes expenses into different types
+- **Key Features**:
+  - Contains category information (name)
+  - One-to-Many relationship with Expense
+  - Unique name constraint
+
+### Service Classes
+
+#### ExpenseService
+```java
+@Service
+public class ExpenseService implements ReportService
+```
+- **Purpose**: Business logic for expense operations
+- **Key Features**:
+  - Implements ReportService interface (polymorphism)
+  - CRUD operations for expenses
+  - Monthly reporting functionality
+  - Validation and business rule enforcement
+
+#### UserService
+```java
+@Service
+public class UserService
+```
+- **Purpose**: Business logic for user management
+- **Key Features**:
+  - User CRUD operations
+  - Authentication support
+  - Admin privilege management
+  - Email validation
+
+#### CategoryService
+```java
+@Service
+public class CategoryService
+```
+- **Purpose**: Business logic for category management
+- **Key Features**:
+  - Category CRUD operations
+  - Permission-based deletion
+  - Name uniqueness validation
+
+### Repository Interfaces
+
+#### ExpenseRepository
+```java
+@Repository
+public interface ExpenseRepository extends JpaRepository<Expense, Long>
+```
+- **Purpose**: Data access for Expense entities
+- **Custom Methods**:
+  - `findByUserIdAndDateBetween()`: Date range queries
+  - `findByUserId()`: User-specific expenses
+  - `findByCategoryId()`: Category-specific expenses
+
+#### UserRepository
+```java
+@Repository
+public interface UserRepository extends JpaRepository<User, Long>
+```
+- **Purpose**: Data access for User entities
+- **Custom Methods**:
+  - `existsByEmail()`: Email uniqueness check
+  - `findByEmail()`: Email-based lookup
+  - `findByEmailAndName()`: Authentication support
+
+#### CategoryRepository
+```java
+@Repository
+public interface CategoryRepository extends JpaRepository<Category, Long>
+```
+- **Purpose**: Data access for Category entities
+- **Custom Methods**:
+  - `findByName()`: Name-based lookup
+  - `existsByName()`: Name uniqueness check
+
+### Controller Classes
+
+#### ExpenseController
+```java
+@RestController
+@RequestMapping("/api")
+public class ExpenseController
+```
+- **Purpose**: REST endpoints for expense operations
+- **Key Endpoints**:
+  - `GET /expenses`: List all expenses
+  - `POST /expenses`: Create expense
+  - `PUT /expenses/{id}`: Update expense
+  - `DELETE /expenses/{id}`: Delete expense
+  - `GET /expenses/summary/{userId}/{year}/{month}`: Monthly summary
+
+#### UserController
+```java
+@RestController
+@RequestMapping("/api")
+public class UserController
+```
+- **Purpose**: REST endpoints for user operations
+- **Key Endpoints**:
+  - `POST /auth/register`: User registration
+  - `POST /auth/login`: User authentication
+  - `GET /users`: List all users
+  - `POST /users`: Create user
+  - `PUT /users/{id}`: Update user
+  - `DELETE /users/{id}`: Delete user
+
+#### CategoryController
+```java
+@RestController
+@RequestMapping("/api")
+public class CategoryController
+```
+- **Purpose**: REST endpoints for category operations
+- **Key Endpoints**:
+  - `GET /categories`: List all categories
+  - `POST /categories`: Create category
+  - `PUT /categories/{id}`: Update category
+  - `DELETE /categories/{id}`: Delete category (admin only)
+
+### Interface
+
+#### ReportService
+```java
+public interface ReportService
+```
+- **Purpose**: Interface for generating expense reports
+- **Methods**:
+  - `getMonthlySummary()`: Category-wise monthly summary
+  - `getMonthlyTotal()`: Total monthly expenses
+- **Implementation**: ExpenseService implements this interface
+
+### Configuration
+
+#### CorsConfig
+```java
+@Configuration
+public class CorsConfig implements WebMvcConfigurer
+```
+- **Purpose**: CORS configuration for frontend integration
+- **Features**:
+  - Allows localhost:3000 origin
+  - Supports all HTTP methods
+  - Enables credentials
+
+## 🗄️ Database Design
+
+### Inheritance Strategy
+The application uses **JOINED** inheritance strategy:
+- `transaction` table: Base table with common fields
+- `expense` table: Joined table with expense-specific fields
+- Demonstrates proper OOP inheritance in database design
+
+### Relationships
+1. **User ↔ Expense**: One-to-Many (One user can have multiple expenses)
+2. **Category ↔ Expense**: One-to-Many (One category can classify multiple expenses)
+3. **Transaction ↔ Expense**: Inheritance (Expense extends Transaction)
+
+### Constraints
+- **Email Uniqueness**: User emails must be unique
+- **Category Name Uniqueness**: Category names must be unique
+- **Foreign Key Constraints**: Proper referential integrity
+- **Not Null Constraints**: Essential fields cannot be null
+
+## 🌐 API Endpoints
+
+### Expense Endpoints
+```
+GET    /api/expenses                          - Get all expenses
+GET    /api/expenses/{id}                     - Get expense by ID
+POST   /api/expenses                          - Create expense
+PUT    /api/expenses/{id}                     - Update expense
+DELETE /api/expenses/{id}                     - Delete expense
+GET    /api/expenses/user/{userId}            - Get user's expenses
+GET    /api/expenses/category/{categoryId}    - Get category's expenses
+GET    /api/expenses/summary/{userId}/{year}/{month} - Monthly summary
+GET    /api/expenses/total/{userId}/{year}/{month}   - Monthly total
+```
+
+### User Endpoints
+```
+POST   /api/auth/register                     - Register new user
+POST   /api/auth/login                        - Login user
+GET    /api/users                             - Get all users
+GET    /api/users/{id}                        - Get user by ID
+POST   /api/users                             - Create user
+PUT    /api/users/{id}                        - Update user
+DELETE /api/users/{id}                        - Delete user
+GET    /api/users/exists/email/{email}        - Check email existence
+```
+
+### Category Endpoints
+```
+GET    /api/categories                        - Get all categories
+GET    /api/categories/{id}                   - Get category by ID
+POST   /api/categories                        - Create category
+PUT    /api/categories/{id}                   - Update category
+DELETE /api/categories/{id}?userEmail=email   - Delete category (admin only)
+GET    /api/categories/exists/name/{name}     - Check name existence
+```
+
+## 🎯 OOP Principles Implementation
+
+### 1. Inheritance
+- **Transaction → Expense**: Base class provides common transaction properties
+- **JPA JOINED Strategy**: Proper inheritance mapping in database
+
+### 2. Encapsulation
+- **Private Fields**: All entity fields are private with public getters/setters
+- **Data Validation**: Input validation at controller and service levels
+- **Service Layer**: Business logic encapsulated in service classes
+
+### 3. Polymorphism
+- **ReportService Interface**: ExpenseService implements interface methods
+- **JPA Repository**: Different repository implementations for different entities
+- **Controller Methods**: Method overloading for different parameter types
+
+### 4. Abstraction
+- **Transaction Abstract Class**: Common interface for all transaction types
+- **Repository Interfaces**: Abstract data access layer
+- **Service Interfaces**: Abstract business logic definitions
+
+### Design Patterns Used
+
+#### 1. Repository Pattern
+- Separates data access logic from business logic
+- Provides a uniform interface for data operations
+
+#### 2. Service Layer Pattern
+- Encapsulates business logic
+- Provides transaction management
+
+#### 3. MVC Pattern
+- Model: Entity classes
+- View: JSON responses
+- Controller: REST controllers
+
+#### 4. Dependency Injection
+- Spring's IoC container manages dependencies
+- `@Autowired` annotations for dependency injection
+
+#### 5. Strategy Pattern
+- ReportService interface with different implementations
+- Different report generation strategies
+
+## ⚙️ Setup Instructions
 
 ### Prerequisites
 - Java 17 or higher
 - Maven 3.6 or higher
+- IDE (IntelliJ IDEA, Eclipse, VS Code)
 
 ### Running the Application
 
-1. **Clone/Navigate to the project directory:**
+1. **Clone the repository**
    ```bash
-   cd /path/to/ExpenseTracker-React-Springboot
+   git clone <repository-url>
+   cd ExpenseTracker-React-Springboot
    ```
 
-2. **Run the Spring Boot application:**
+2. **Build the project**
+   ```bash
+   mvn clean install
+   ```
+
+3. **Run the application**
    ```bash
    mvn spring-boot:run
    ```
 
-3. **Access the application:**
-   - Web Interface: http://localhost:8080
-   - H2 Database Console: http://localhost:8080/h2-console
-   - API Base URL: http://localhost:8080/api
+4. **Access the application**
+   - Backend API: `http://localhost:8080`
+   - H2 Console: `http://localhost:8080/h2-console`
 
-### Database Access
-- **JDBC URL:** `jdbc:h2:mem:testdb`
-- **Username:** `sa`
-- **Password:** (leave blank)
+### Database Configuration
 
-## 🎯 How to Use the Web Application
-
-### 1. Getting Started
-1. Open http://localhost:8080 in your browser
-2. You'll see the login/register interface
-
-### 2. Register a New User
-1. Click on the "Register" tab
-2. Enter your full name and email address
-3. Click "Register"
-4. You'll be automatically logged in
-
-### 3. Login (if you already have an account)
-1. Stay on the "Login" tab
-2. Enter your email and name
-3. Click "Login"
-
-### 4. Adding Expenses
-1. After login, you'll see the main dashboard
-2. Fill in the "Add New Expense" form:
-   - **Description:** What the expense was for (e.g., "Coffee", "Gas")
-   - **Amount:** How much you spent
-   - **Date:** When the expense occurred
-   - **Location:** Where you spent the money
-   - **Category:** Select from dropdown (Travel, Auto Loan, Student Loan, Food, etc.)
-3. Click "Add Expense"
-4. The expense will appear in your expenses table
-
-### 5. Managing Expenses
-- **View Expenses:** All your expenses are displayed in a table
-- **Delete Expenses:** Click the "Delete" button next to any expense
-- **Track Totals:** See your total expenses and count at the top
-
-### 6. Adding Categories
-1. In the "Add New Category" section
-2. Enter a category name (e.g., "Food", "Entertainment", "Bills")
-3. Click "Add Category"
-4. The new category will be available in the dropdown when adding expenses
-
-### 7. Managing Categories (Admin Only)
-1. **Admin Login Required:** Login with `admin@auth.com` / `Admin`
-2. **Admin Badge:** Look for green "ADMIN" badge next to username
-3. **Category List:** View all categories in the "Manage Categories" section
-4. **Delete Categories:** 
-   - Click red "Delete" button next to any category
-   - Confirm deletion in the popup dialog
-   - Category is permanently removed from the system
-5. **Permission Control:** Regular users see "Admin only" text instead of delete buttons
-
-### 8. User Roles and Permissions
-- **Regular Users:** Can add expenses, create categories, but cannot delete categories
-- **Admin Users:** Full access including category deletion privileges
-- **Visual Indicators:** Admin users are clearly identified with badges and enhanced UI elements
-
-## 📡 API Endpoints
-
-### Authentication
-- `POST /api/auth/register` - Register new user
-- `POST /api/auth/login` - Login user
-
-### Users
-- `GET /api/users` - Get all users
-- `GET /api/users/{id}` - Get user by ID
-- `POST /api/users` - Create user
-- `PUT /api/users/{id}` - Update user
-- `DELETE /api/users/{id}` - Delete user
-
-### Expenses
-- `GET /api/expenses` - Get all expenses
-- `GET /api/expenses/{id}` - Get expense by ID
-- `GET /api/expenses/user/{userId}` - Get expenses by user
-- `POST /api/expenses` - Create expense
-- `POST /api/expenses/create` - Create expense with parameters
-- `PUT /api/expenses/{id}` - Update expense
-- `DELETE /api/expenses/{id}` - Delete expense
-
-### Categories
-- `GET /api/categories` - Get all categories
-- `GET /api/categories/{id}` - Get category by ID
-- `POST /api/categories` - Create category
-- `PUT /api/categories/{id}` - Update category
-- `DELETE /api/categories/{id}?userEmail={email}` - **Delete category (Admin only)**
-- `GET /api/categories/exists/name/{name}` - Check if category name exists
-
-## 🗂️ Sample Data
-
-The application comes with pre-loaded sample data:
-
-### Users
-- **Siamak** (Codeengine11@gmail.com) - Regular User
-- **John** (John@john.com) - Regular User  
-- **Adam** (adam@adam.com) - Regular User
-- **Admin** (admin@auth.com) - **Administrator** with category deletion privileges
-
-### Categories
-- Travel
-- Auto Loan
-- Student Loan
-
-### Sample Expenses
-- New York Business Trip - $1,500
-- Ford Mustang Payment - $450
-- Grand Canyon Trip - $800
-
-## 👑 Admin Features
-
-### Admin User Access
-The application includes a special admin user with enhanced privileges:
-
-- **Email:** `admin@auth.com`
-- **Name:** `Admin`
-- **Privileges:** Can delete categories system-wide
-
-### Admin Identification
-- **Visual Badge:** Admin users see a green "ADMIN" badge next to their username
-- **Enhanced UI:** Admin users see delete buttons for categories
-- **Permission Controls:** Backend validates admin status before allowing destructive operations
-
-### Category Management Privileges
-
-#### For Regular Users:
-- ✅ View all categories
-- ✅ Add new categories
-- ✅ Use categories in expenses
-- ❌ **Cannot delete categories** (shows "Admin only" text)
-
-#### For Admin Users:
-- ✅ All regular user permissions
-- ✅ **Delete any category** with confirmation dialogs
-- ✅ Visual delete buttons on category items
-- ✅ System-wide category management
-
-### Testing Admin Features
-
-1. **Login as Admin:**
-   ```
-   Email: admin@auth.com
-   Name: Admin
-   ```
-
-2. **Verify Admin Status:**
-   - Look for green "ADMIN" badge in header
-   - Category section shows red "Delete" buttons
-   - Can successfully delete categories
-
-3. **Compare with Regular User:**
-   - Login with any other user (e.g., Siamak/Codeengine11@gmail.com)
-   - No admin badge visible
-   - Categories show "Admin only" text instead of delete buttons
-
-## 🎨 Design Features
-
-- **Clean Modern UI** - Professional appearance with intuitive design
-- **Responsive Design** - Works perfectly on desktop, tablet, and mobile devices
-- **Color-Coded Elements** - Easy visual distinction between different UI components
-- **Form Validation** - Prevents invalid data entry with real-time feedback
-- **Real-time Updates** - Immediate feedback on all user actions
-- **Intuitive Navigation** - User-friendly interface with clear visual hierarchy
-- **Admin Visual Indicators** - Green badges and enhanced UI for admin users
-- **Permission-Based UI** - Interface adapts based on user privileges
-- **Confirmation Dialogs** - Safe deletion with user confirmation for destructive actions
-- **Status Messages** - Clear success/error messaging for all operations
-
-## 🔧 Development Notes
-
-### Architecture
-- **Layered Architecture:** Controller → Service → Repository → Model
-- **REST API:** All backend operations exposed as REST endpoints
-- **OOP Principles:** Inheritance, Encapsulation, Polymorphism, Abstraction
-- **Clean Code:** Well-documented and organized with clear separation of concerns
-- **Security:** Role-based access control with admin privilege system
-- **Permission Validation:** Double-layer security (frontend UI + backend validation)
-
-### Database Design
-- **JPA Entities** with proper relationships and constraints
-- **Inheritance:** Transaction → Expense (demonstrating OOP inheritance)
-- **Foreign Keys:** User-Expense, Category-Expense relationships
-- **Constraints:** Email uniqueness, category name uniqueness
-- **Admin System:** User table includes `is_admin` boolean field for privilege control
-- **Data Integrity:** Proper cascading and referential integrity
-
-### Security Implementation
-- **Frontend Security:** UI elements hidden/shown based on user privileges
-- **Backend Validation:** All destructive operations validate user permissions
-- **Admin Identification:** Visual badges and clear role identification
-- **Error Handling:** Graceful handling of unauthorized access attempts
-- **Confirmation Systems:** Multi-step confirmation for critical operations
-
-### Key Design Patterns
-- **Repository Pattern:** Data access abstraction
-- **Service Layer Pattern:** Business logic separation
-- **MVC Pattern:** Model-View-Controller architecture
-- **Dependency Injection:** Spring framework IoC container
-- **RESTful Design:** Stateless API with proper HTTP methods
-
-## 🔐 Admin System Implementation Details
-
-### Backend Implementation
-
-#### User Model Enhancement
-```java
-@Entity
-@Table(name = "app_user")
-public class User {
-    // ...existing fields...
-    
-    @Column(name = "is_admin", nullable = false)
-    private boolean admin = false;
-    
-    // Constructors, getters, setters...
-}
+#### Development (H2)
+```properties
+# application.properties
+spring.datasource.url=jdbc:h2:mem:testdb
+spring.h2.console.enabled=true
+spring.jpa.hibernate.ddl-auto=create-drop
 ```
 
-#### CategoryService Permission Method
-```java
-public boolean deleteCategoryWithPermission(Long id, String userEmail) {
-    // Find user by email
-    User user = userRepository.findByEmail(userEmail);
-    
-    if (user == null) {
-        throw new RuntimeException("User not found");
-    }
-    
-    // Check if user is admin
-    if (!user.isAdmin()) {
-        return false; // Permission denied
-    }
-    
-    deleteCategory(id);
-    return true;
-}
+#### Production (PostgreSQL)
+```properties
+# application-prod.properties
+spring.datasource.url=${DATABASE_URL}
+spring.datasource.username=${DB_USERNAME}
+spring.datasource.password=${DB_PASSWORD}
+spring.jpa.hibernate.ddl-auto=update
 ```
 
-#### CategoryController Admin Endpoint
-```java
-@DeleteMapping("/categories/{id}")
-Map<String,Object> deleteCategory(@PathVariable Long id, @RequestParam String userEmail) {
-    Map<String,Object> response = new HashMap<>();
-    try {
-        boolean deleted = categoryService.deleteCategoryWithPermission(id, userEmail);
-        response.put("deleted", deleted);
-        response.put("message", deleted ? 
-            "Category deleted successfully" : 
-            "Access denied. Only admins can delete categories.");
-        return response;
-    } catch (Exception e) {
-        response.put("deleted", false);
-        response.put("message", "Error deleting category: " + e.getMessage());
-        return response;
-    }
-}
+### Testing
+```bash
+# Run unit tests
+mvn test
+
+# Run with coverage
+mvn test jacoco:report
 ```
 
-### Frontend Implementation
+## 📚 Additional Features
 
-#### Admin Badge Display
-```javascript
-// Show admin badge if user is admin
-const adminBadge = currentUser.admin ? ' <span class="admin-badge">ADMIN</span>' : '';
-userName.innerHTML = `Welcome, ${currentUser.name}${adminBadge}`;
-```
+### Security
+- **Admin System**: Role-based access control
+- **Permission Validation**: Double-layer security (frontend + backend)
+- **Data Validation**: Input validation and sanitization
 
-#### Permission-Based UI Rendering
-```javascript
-function displayCategories() {
-    container.innerHTML = categories.map(category => `
-        <div class="category-item">
-            <div class="category-name">${category.name}</div>
-            <div class="category-actions">
-                ${currentUser.admin ? 
-                    `<button class="delete-category-btn" onclick="deleteCategory(${category.id})">Delete</button>` : 
-                    `<span style="color: #666;">Admin only</span>`
-                }
-            </div>
-        </div>
-    `).join('');
-}
-```
+### Error Handling
+- **Global Exception Handling**: Centralized error responses
+- **Custom Exceptions**: EntityNotFoundException for missing resources
+- **Validation**: Bean validation with proper error messages
 
-#### Secure Category Deletion
-```javascript
-async function deleteCategory(categoryId) {
-    if (!currentUser.admin) {
-        showMessage('Only administrators can delete categories.', 'error');
-        return;
-    }
-    
-    if (!confirm('Are you sure you want to delete this category?')) {
-        return;
-    }
-    
-    const response = await fetch(`${API_BASE}/categories/${categoryId}?userEmail=${encodeURIComponent(currentUser.email)}`, {
-        method: 'DELETE'
-    });
-    
-    const result = await response.json();
-    // Handle response...
-}
-```
+### Logging
+- **Application Logs**: Comprehensive logging throughout the application
+- **Request Logging**: HTTP request/response logging
 
-### Database Schema
-```sql
--- User table with admin privileges
-CREATE TABLE app_user (
-    id BIGINT NOT NULL PRIMARY KEY,
-    email VARCHAR(255) NOT NULL UNIQUE,
-    is_admin BOOLEAN NOT NULL DEFAULT FALSE,
-    name VARCHAR(255) NOT NULL
-);
-
--- Sample admin user
-INSERT INTO app_user (id, name, email, is_admin) 
-VALUES (4, 'Admin', 'admin@auth.com', true);
-```
-
-## 🚀 Future Enhancements
-
-Potential improvements you could add:
-
-### Security & Authentication
-- JWT-based authentication with refresh tokens
-- Password encryption with bcrypt
-- OAuth2 integration (Google, GitHub login)
-- Two-factor authentication (2FA)
-- Session timeout and security policies
-
-### User Management
-- User profile management and settings
-- Multiple admin roles (Super Admin, Category Admin, etc.)
-- User groups and organization management
-- Activity logging and audit trails
-
-### Expense Features
-- Expense categories per user/organization
-- Advanced date range filtering and search
-- Recurring expense templates
-- Expense approval workflows
-- Bulk expense import/export
-
-### Analytics & Reporting
-- Interactive expense charts and graphs
-- Monthly/yearly spending reports
-- Category-wise spending analysis
-- Budget tracking and alerts
-- Export to CSV/PDF/Excel formats
-
-### Advanced Features
-- Multi-currency support with real-time exchange rates
-- Receipt photo upload and OCR processing
-- Expense budgets and spending limits
-- Email notifications and reminders
-- Mobile app (React Native/Flutter)
-- Offline support with data synchronization
-
-### System Improvements
-- Database migration to PostgreSQL/MySQL
-- Redis caching for performance
-- Containerization with Docker
-- CI/CD pipeline setup
-- Comprehensive test coverage
-- API rate limiting and monitoring
+### Documentation
+- **JavaDoc**: Comprehensive code documentation
+- **API Documentation**: REST endpoint documentation
+- **UML Diagrams**: Visual representation of system architecture
 
 ---
 
-**Happy Expense Tracking! 💰📊**
+*This documentation provides a comprehensive overview of the ExpenseTracker backend architecture, focusing on the OOP principles and design patterns implemented throughout the system.*
