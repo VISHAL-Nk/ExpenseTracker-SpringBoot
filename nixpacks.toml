@@ -1,8 +1,0 @@
-[providers]
-java = "17"
-
-[phases.build]
-cmds = ["mvn clean package -DskipTests"]
-
-[phases.start]
-cmd = "java -Dspring.profiles.active=prod -jar target/ExpenseTracker-0.0.1-SNAPSHOT.jar"

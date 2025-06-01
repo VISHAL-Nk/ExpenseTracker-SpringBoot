@@ -247,13 +247,13 @@ function displayExpenses() {
     
     if (expenses.length === 0) {
         container.innerHTML = '<p style="text-align: center; color: #666;">No expenses yet. Add your first expense above!</p>';
-        totalSpan.textContent = 'Total: $0.00';
+        totalSpan.textContent = 'Total: ₹0.00';
         return;
     }
     
     // Calculate total
     const total = expenses.reduce((sum, expense) => sum + expense.amount, 0);
-    totalSpan.textContent = `Total: $${total.toFixed(2)}`;
+    totalSpan.textContent = `Total: ₹${total.toFixed(2)}`;
     
     // Display expenses
     container.innerHTML = expenses.map(expense => `
@@ -265,7 +265,7 @@ function displayExpenses() {
                 </div>
             </div>
             <div style="display: flex; align-items: center;">
-                <div class="expense-amount">$${expense.amount.toFixed(2)}</div>
+                <div class="expense-amount">₹${expense.amount.toFixed(2)}</div>
                 <button class="delete-btn" onclick="deleteExpense(${expense.id})">×</button>
             </div>
         </div>
