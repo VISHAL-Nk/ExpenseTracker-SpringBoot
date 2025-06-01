@@ -12,6 +12,21 @@ INSERT INTO app_user (id, name, email, is_admin) VALUES (4, 'Admin', 'admin@auth
 INSERT INTO category (id, name) VALUES (1, 'Travel');
 INSERT INTO category (id, name) VALUES (2, 'Auto Loan');
 INSERT INTO category (id, name) VALUES (3, 'Student Loan');
+INSERT INTO category (id, name) VALUES (4, 'Food & Dining');
+INSERT INTO category (id, name) VALUES (5, 'Entertainment');
+INSERT INTO category (id, name) VALUES (6, 'Healthcare');
+INSERT INTO category (id, name) VALUES (7, 'Utilities');
+INSERT INTO category (id, name) VALUES (8, 'Groceries');
+INSERT INTO category (id, name) VALUES (9, 'Shopping');
+INSERT INTO category (id, name) VALUES (10, 'Gas & Fuel');
+INSERT INTO category (id, name) VALUES (11, 'Insurance');
+INSERT INTO category (id, name) VALUES (12, 'Home & Garden');
+INSERT INTO category (id, name) VALUES (13, 'Education');
+INSERT INTO category (id, name) VALUES (14, 'Gym & Fitness');
+INSERT INTO category (id, name) VALUES (15, 'Subscriptions');
+INSERT INTO category (id, name) VALUES (16, 'Personal Care');
+INSERT INTO category (id, name) VALUES (17, 'Gifts & Donations');
+INSERT INTO category (id, name) VALUES (18, 'Technology');
 
 -- Insert transactions (base class entries)
 INSERT INTO transaction (id, description) VALUES (100, 'New York Business Trip');
