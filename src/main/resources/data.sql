@@ -27,6 +27,7 @@ INSERT INTO category (id, name) VALUES (15, 'Subscriptions');
 INSERT INTO category (id, name) VALUES (16, 'Personal Care');
 INSERT INTO category (id, name) VALUES (17, 'Gifts & Donations');
 INSERT INTO category (id, name) VALUES (18, 'Technology');
+INSERT INTO category (id, name) VALUES (19, 'Other');
 
 -- Insert transactions (base class entries)
 INSERT INTO transaction (id, description) VALUES (100, 'New York Business Trip');
