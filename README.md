@@ -179,69 +179,7 @@ classDiagram
     CategoryRepository --> Category : manages
 ```
 
-### Entity Relationship Diagram
 
-```mermaid
-erDiagram
-    TRANSACTION {
-        bigint id PK
-        varchar description
-    }
-    
-    EXPENSE {
-        bigint id PK,FK
-        double amount
-        date date
-        varchar location
-        bigint category_id FK
-        bigint user_id FK
-    }
-    
-    APP_USER {
-        bigint id PK
-        varchar name
-        varchar email UK
-        boolean is_admin
-    }
-    
-    CATEGORY {
-        bigint id PK
-        varchar name UK
-    }
-    
-    TRANSACTION ||--|| EXPENSE : inherits
-    APP_USER ||--o{ EXPENSE : creates
-    CATEGORY ||--o{ EXPENSE : classifies
-```
-
-### Sequence Diagram - Create Expense
-
-```mermaid
-sequenceDiagram
-    participant Client
-    participant ExpenseController
-    participant ExpenseService
-    participant UserService
-    participant CategoryService
-    participant ExpenseRepository
-    participant Database
-
-    Client->>ExpenseController: POST /api/expenses
-    ExpenseController->>ExpenseService: createExpense(expense)
-    
-    ExpenseService->>UserService: getUserById(userId)
-    UserService-->>ExpenseService: user
-    
-    ExpenseService->>CategoryService: getCategoryById(categoryId)
-    CategoryService-->>ExpenseService: category
-    
-    ExpenseService->>ExpenseRepository: save(expense)
-    ExpenseRepository->>Database: INSERT expense
-    Database-->>ExpenseRepository: saved expense
-    ExpenseRepository-->>ExpenseService: saved expense
-    ExpenseService-->>ExpenseController: saved expense
-    ExpenseController-->>Client: 201 Created + expense data
-```
 
 ## 📝 Class Descriptions
 
